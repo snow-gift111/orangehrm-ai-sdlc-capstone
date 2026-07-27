@@ -1,0 +1,46 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: orangehrm-leave-balance-alert
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/orangehrm}
+    username: ${DB_USERNAME:orangehrm}
+    password: ${DB_PASSWORD:orangehrm}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}
+
+logging:
+  level:
+    root: INFO
+    com.orangehrm.lba: INFO
+
+lba:
+  scheduler:
+    cron: ${LBA_SCHEDULER_CRON:0 0 2 * * *} # daily at 02:00
+  email:
+    from: ${LBA_EMAIL_FROM:no-reply@orangehrm.local}
+    subjectPrefix: ${LBA_EMAIL_SUBJECT_PREFIX:[OrangeHRM] }
+  security:
+    ruleManageAuthority: ${LBA_RULE_MANAGE_AUTHORITY:LBA_RULE_MANAGE}
+    historyViewAuthority: ${LBA_HISTORY_VIEW_AUTHORITY:LBA_HISTORY_VIEW}
