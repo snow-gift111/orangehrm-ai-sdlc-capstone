@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Security\Application\Service;
 
 use App\Security\Domain\Entity\User;
-use Symfony\Component\HttpFoundation\Response;
+use App\Shared\Exception\UnauthenticatedException;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use App\Shared\Exception\ApplicationException;
 
 /**
  * Provides the currently authenticated application user.
@@ -46,16 +45,5 @@ final class CurrentUserProvider
         }
 
         return $user;
-    }
-}
-
-/**
- * Raised when no active authenticated user is present (HTTP 401).
- */
-final class UnauthenticatedException extends ApplicationException
-{
-    public function __construct()
-    {
-        parent::__construct('Authentication is required.', 'UNAUTHENTICATED', Response::HTTP_UNAUTHORIZED);
     }
 }
