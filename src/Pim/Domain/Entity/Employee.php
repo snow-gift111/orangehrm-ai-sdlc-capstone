@@ -13,7 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
  * balance alerts. Deleted employees are excluded from alert evaluation
  * (LBA-FR-004).
  */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: \App\Pim\Infrastructure\Repository\EmployeeRepository::class)]
 #[ORM\Table(name: 'employee')]
 #[ORM\UniqueConstraint(name: 'uq_employee_employee_id', columns: ['employee_id'])]
 #[ORM\Index(name: 'idx_employee_deleted_at', columns: ['deleted_at'])]
