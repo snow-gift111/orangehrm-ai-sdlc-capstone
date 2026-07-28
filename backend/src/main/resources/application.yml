@@ -1,0 +1,30 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: orangehrm-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/orangehrm}
+    username: ${SPRING_DATASOURCE_USERNAME:orangehrm}
+    password: ${SPRING_DATASOURCE_PASSWORD:orangehrm}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+app:
+  scheduler:
+    leave-alert-evaluation-cron: ${LEAVE_ALERT_EVALUATION_CRON:0 0 2 * * *}
