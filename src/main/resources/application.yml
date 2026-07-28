@@ -1,19 +1,22 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
     name: leave-balance-alert
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/orangehrm}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/orangehrm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${DB_USERNAME:orangehrm}
     password: ${DB_PASSWORD:orangehrm}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
     properties:
       hibernate:
+        jdbc:
+          time_zone: UTC
         format_sql: false
   flyway:
     enabled: true
@@ -23,20 +26,16 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info
 
-app:
+leave-alert:
+  scheduler:
+    enabled: ${LEAVE_ALERT_SCHEDULER_ENABLED:true}
+    cron: ${LEAVE_ALERT_SCHEDULER_CRON:0 0 2 * * *}
+    zone: ${LEAVE_ALERT_SCHEDULER_ZONE:UTC}
+    period-key: ${LEAVE_ALERT_PERIOD_KEY:#{T(java.time.Year).now().toString()}}
   security:
-    # Comma-separated role names expected in Authentication authorities
-    hrAdminRole: ${HR_ADMIN_ROLE:HR_ADMIN}
-    # Comma-separated roles allowed to view admin alert history (in addition to HR admin)
-    hrHistoryViewerRoles: ${HR_HISTORY_VIEWER_ROLES:HR}
-
-  leaveBalanceAlert:
-    evaluationCron: ${LAB_EVALUATION_CRON:0 0 2 * * *} # daily at 02:00
-    employeeBatchSize: ${LAB_EMPLOYEE_BATCH_SIZE:500}
-
-logging:
-  level:
-    root: INFO
-    com.orangehrm.leavealert: INFO
+    header-auth-enabled: ${LEAVE_ALERT_HEADER_AUTH_ENABLED:true}
+  recipients:
+    hr-user-ids: ${LEAVE_ALERT_HR_USER_IDS:}
+    manager-user-by-employee-id: ${LEAVE_ALERT_MANAGER_USER_BY_EMPLOYEE_ID:}
