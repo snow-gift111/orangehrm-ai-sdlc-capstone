@@ -7,6 +7,7 @@ import com.orangehrm.leave.domain.RecipientType;
 import com.orangehrm.leave.domain.RuleFrequency;
 import com.orangehrm.leave.domain.RuleScopeType;
 import com.orangehrm.leave.domain.ThresholdOperator;
+import com.orangehrm.leave.repo.LeaveAlertRuleRecipientRepository;
 import com.orangehrm.leave.repo.LeaveAlertRuleRepository;
 import com.orangehrm.leave.repo.LeaveTypeRepository;
 import com.orangehrm.user.AppUserRepository;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class LeaveAlertRuleService {
 
   private final LeaveAlertRuleRepository repository;
+  private final LeaveAlertRuleRecipientRepository recipientRepository;
   private final LeaveTypeRepository leaveTypeRepository;
   private final AppUserRepository userRepository;
   private final Clock clock;
@@ -39,12 +41,18 @@ public class LeaveAlertRuleService {
                                boolean active,
                                String createdByUsername) {
 
-    var createdBy = userRepository.findByUsername(createdByUsername).orElseThrow(() -> new NotFoundException("User not found"));
+    var createdBy = userRepository.findByUsername(createdByUsername)
+        .orElseThrow(() -> new NotFoundException("User not found"));
+
+    if (scopeType == RuleScopeType.ONE && leaveTypeId == null) {
+      throw new IllegalArgumentException("leaveTypeId is required when scope type is ONE");
+    }
 
     LeaveAlertRule rule = new LeaveAlertRule();
     rule.setScopeType(scopeType);
     if (scopeType == RuleScopeType.ONE) {
-      rule.setLeaveType(leaveTypeRepository.findById(leaveTypeId).orElseThrow(() -> new NotFoundException("Leave type not found")));
+      rule.setLeaveType(leaveTypeRepository.findById(leaveTypeId)
+          .orElseThrow(() -> new NotFoundException("Leave type not found")));
     } else {
       rule.setLeaveType(null);
     }
@@ -61,20 +69,22 @@ public class LeaveAlertRuleService {
 
     rule = repository.save(rule);
 
+    // Ensure at least EMPLOYEE is persisted when recipients are not provided.
+    Set<RecipientType> effectiveRecipients = (recipients == null || recipients.isEmpty())
+        ? Set.of(RecipientType.EMPLOYEE)
+        : recipients;
+
     Set<LeaveAlertRuleRecipient> recs = new HashSet<>();
-    if (recipients != null) {
-      for (RecipientType rt : recipients) {
-        LeaveAlertRuleRecipient r = new LeaveAlertRuleRecipient();
-        r.setRule(rule);
-        r.setRecipientType(rt);
-        recs.add(r);
-      }
+    for (RecipientType rt : effectiveRecipients) {
+      LeaveAlertRuleRecipient r = new LeaveAlertRuleRecipient();
+      r.setRule(rule);
+      r.setRecipientType(rt);
+      recs.add(r);
     }
+
+    // On create: save rule, then delete none, then save recipients list.
+    recipientRepository.saveAll(recs);
     rule.setRecipients(recs);
-    // Cascade is not enabled; rely on persistence via saveAll through rule re-save.
-    // Simpler: save rule first, then persist recipients with EntityManager by saving rule again.
-    // We'll use repository.save(rule) again after attaching; JPA will persist recipients if relationship is cascaded.
-    // Since it's not, keep recipients stored in DB via separate repository? We'll use EntityManager.
 
     return rule;
   }
@@ -121,8 +131,24 @@ public class LeaveAlertRuleService {
       rule.setActive(active);
     }
 
-    // Sprint 1: recipient updates are not implemented fully without a recipient repository.
-    // Keep rule update limited to core fields to stay production-safe.
+    // Update recipients by replacing existing recipients.
+    if (recipients != null) {
+      Set<RecipientType> effectiveRecipients = recipients.isEmpty()
+          ? Set.of(RecipientType.EMPLOYEE)
+          : recipients;
+
+      recipientRepository.deleteAllByRule_Id(rule.getId());
+
+      Set<LeaveAlertRuleRecipient> recs = new HashSet<>();
+      for (RecipientType rt : effectiveRecipients) {
+        LeaveAlertRuleRecipient r = new LeaveAlertRuleRecipient();
+        r.setRule(rule);
+        r.setRecipientType(rt);
+        recs.add(r);
+      }
+      recipientRepository.saveAll(recs);
+      rule.setRecipients(recs);
+    }
 
     rule.setUpdatedAt(Instant.now(clock));
     return repository.save(rule);
