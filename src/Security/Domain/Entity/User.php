@@ -16,7 +16,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * A user may optionally be mapped to a PIM employee record, which enables
  * employee self-view of leave balances and leave balance alerts.
  */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: \App\Security\Infrastructure\Repository\UserRepository::class)]
 #[ORM\Table(name: 'app_user')]
 #[ORM\UniqueConstraint(name: 'uq_user_username', columns: ['username'])]
 #[ORM\Index(name: 'idx_user_employee', columns: ['employee_id'])]
