@@ -1,0 +1,37 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: leave-balance-alert
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/orangehrm}
+    username: ${DB_USERNAME:orangehrm}
+    password: ${DB_PASSWORD:orangehrm}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.orangehrm.lba: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+lba:
+  evaluation:
+    cron: ${LBA_EVALUATION_CRON:0 0 2 * * *}
+  suppression:
+    defaultWindowDays: ${LBA_SUPPRESSION_WINDOW_DAYS:7}
+  operational:
+    enableManualRunEndpoint: ${LBA_ENABLE_MANUAL_RUN_ENDPOINT:true}
