@@ -1,0 +1,21 @@
+parameters:
+  leave.negative_balance_allowed: '%env(bool:LEAVE_NEGATIVE_BALANCE_ALLOWED)%'
+  leave.alert_history_retention_days: '%env(int:LEAVE_ALERT_HISTORY_RETENTION_DAYS)%'
+  leave.threshold_audit_retention_days: '%env(int:LEAVE_THRESHOLD_AUDIT_RETENTION_DAYS)%'
+
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  App\:
+    resource: '../src/'
+    exclude:
+      - '../src/Kernel.php'
+      - '../src/**/Domain/Entity/'
+
+  App\LeaveAlert\Application\Service\BusinessPolicyConfigurationService:
+    arguments:
+      $negativeBalanceAllowed: '%leave.negative_balance_allowed%'
+      $alertHistoryRetentionDays: '%leave.alert_history_retention_days%'
+      $thresholdAuditRetentionDays: '%leave.threshold_audit_retention_days%'
