@@ -5,158 +5,119 @@ declare(strict_types=1);
 namespace App\LeaveAlert\Domain\Entity;
 
 use App\LeaveAlert\Domain\Enum\AlertStatus;
-use App\LeaveAlert\Domain\Enum\TriggerCondition;
+use App\LeaveAlert\Domain\Enum\AlertType;
+use App\LeaveAlert\Infrastructure\Repository\LeaveBalanceAlertRepository;
 use App\Pim\Domain\Entity\Employee;
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * Generated leave balance alert (LBA-FR-017).
- *
- * Duplicate active alerts are prevented for the same employee, leave type
- * context, rule, threshold value and trigger condition (LBA-FR-018). The
- * uniqueness is enforced both by an indexed application-level check and by a
- * database unique constraint to remain safe across clustered nodes.
- */
-#[ORM\Entity(repositoryClass: \App\LeaveAlert\Infrastructure\Repository\LeaveBalanceAlertRepository::class)]
+#[ORM\Entity(repositoryClass: LeaveBalanceAlertRepository::class)]
 #[ORM\Table(name: 'leave_balance_alert')]
-#[ORM\UniqueConstraint(
-    name: 'uq_active_alert_condition',
-    columns: ['employee_id', 'rule_id', 'leave_type_code', 'threshold_value_at_alert', 'trigger_condition', 'duplicate_guard']
-)]
-#[ORM\Index(name: 'idx_leave_alert_employee_status', columns: ['employee_id', 'status'])]
-#[ORM\Index(name: 'idx_leave_alert_status_date', columns: ['status', 'alert_generated_at'])]
+#[ORM\Index(name: 'idx_lba_employee_status', columns: ['employee_id', 'alert_status'])]
+#[ORM\Index(name: 'idx_lba_employee_type_status', columns: ['employee_id', 'leave_type_id', 'alert_type', 'alert_status'])]
+#[ORM\Index(name: 'idx_lba_condition_status', columns: ['condition_key', 'alert_status'])]
+#[ORM\UniqueConstraint(name: 'uq_lba_active_condition_guard', columns: ['condition_key', 'active_guard'])]
 class LeaveBalanceAlert
 {
-    /**
-     * Guard value used while an alert is ACTIVE. Resolved alerts receive a
-     * unique guard value so that the duplicate constraint applies to active
-     * alerts only.
-     */
     private const ACTIVE_GUARD = 'ACTIVE';
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(name: 'id', type: 'integer')]
+    #[ORM\Column(name: 'alert_id', type: 'integer')]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Employee::class)]
     #[ORM\JoinColumn(name: 'employee_id', referencedColumnName: 'id', nullable: false)]
     private Employee $employee;
 
-    #[ORM\ManyToOne(targetEntity: LeaveBalance::class)]
-    #[ORM\JoinColumn(name: 'leave_balance_id', referencedColumnName: 'id', nullable: false)]
-    private LeaveBalance $leaveBalance;
+    #[ORM\ManyToOne(targetEntity: LeaveType::class)]
+    #[ORM\JoinColumn(name: 'leave_type_id', referencedColumnName: 'leave_type_id', nullable: false)]
+    private LeaveType $leaveType;
 
-    #[ORM\ManyToOne(targetEntity: LeaveAlertRule::class)]
-    #[ORM\JoinColumn(name: 'rule_id', referencedColumnName: 'id', nullable: false)]
-    private LeaveAlertRule $rule;
+    #[ORM\Column(name: 'alert_type', type: 'string', length: 40, enumType: AlertType::class)]
+    private AlertType $alertType;
 
-    #[ORM\Column(name: 'leave_type_code', type: 'string', length: 50)]
-    private string $leaveTypeCode;
+    #[ORM\Column(name: 'alert_status', type: 'string', length: 20, enumType: AlertStatus::class)]
+    private AlertStatus $alertStatus;
 
-    #[ORM\Column(name: 'current_balance_at_alert', type: 'decimal', precision: 10, scale: 2)]
-    private string $currentBalanceAtAlert;
+    #[ORM\Column(name: 'current_balance', type: 'decimal', precision: 10, scale: 2)]
+    private string $currentBalance;
 
-    #[ORM\Column(name: 'threshold_value_at_alert', type: 'decimal', precision: 10, scale: 2)]
-    private string $thresholdValueAtAlert;
+    #[ORM\Column(name: 'threshold_value', type: 'decimal', precision: 10, scale: 2, nullable: true)]
+    private ?string $thresholdValue;
 
-    #[ORM\Column(name: 'trigger_condition', type: 'string', length: 30, enumType: TriggerCondition::class)]
-    private TriggerCondition $triggerCondition;
+    #[ORM\Column(name: 'requested_duration', type: 'decimal', precision: 10, scale: 2, nullable: true)]
+    private ?string $requestedDuration;
 
-    #[ORM\Column(name: 'status', type: 'string', length: 20, enumType: AlertStatus::class)]
-    private AlertStatus $status = AlertStatus::ACTIVE;
+    #[ORM\Column(name: 'condition_key', type: 'string', length: 128)]
+    private string $conditionKey;
 
-    #[ORM\Column(name: 'duplicate_guard', type: 'string', length: 64)]
-    private string $duplicateGuard = self::ACTIVE_GUARD;
+    #[ORM\Column(name: 'active_guard', type: 'string', length: 128)]
+    private string $activeGuard;
 
-    #[ORM\Column(name: 'alert_generated_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $alertGeneratedAt;
+    #[ORM\Column(name: 'generated_at', type: 'datetime_immutable')]
+    private \DateTimeImmutable $generatedAt;
+
+    #[ORM\Column(name: 'resolved_at', type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $resolvedAt = null;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
+    #[ORM\Column(name: 'updated_at', type: 'datetime_immutable')]
+    private \DateTimeImmutable $updatedAt;
+
     public function __construct(
         Employee $employee,
-        LeaveBalance $leaveBalance,
-        LeaveAlertRule $rule,
-        string $leaveTypeCode,
-        string $currentBalanceAtAlert,
-        string $thresholdValueAtAlert,
-        TriggerCondition $triggerCondition,
+        LeaveType $leaveType,
+        AlertType $alertType,
+        string $currentBalance,
+        ?string $thresholdValue,
+        ?string $requestedDuration,
+        string $conditionKey,
         ?\DateTimeImmutable $now = null,
     ) {
         $timestamp = $now ?? new \DateTimeImmutable();
-
         $this->employee = $employee;
-        $this->leaveBalance = $leaveBalance;
-        $this->rule = $rule;
-        $this->leaveTypeCode = $leaveTypeCode;
-        $this->currentBalanceAtAlert = $currentBalanceAtAlert;
-        $this->thresholdValueAtAlert = $thresholdValueAtAlert;
-        $this->triggerCondition = $triggerCondition;
-        $this->status = AlertStatus::ACTIVE;
-        $this->duplicateGuard = self::ACTIVE_GUARD;
-        $this->alertGeneratedAt = $timestamp;
+        $this->leaveType = $leaveType;
+        $this->alertType = $alertType;
+        $this->alertStatus = AlertStatus::ACTIVE;
+        $this->currentBalance = $currentBalance;
+        $this->thresholdValue = $thresholdValue;
+        $this->requestedDuration = $requestedDuration;
+        $this->conditionKey = $conditionKey;
+        $this->activeGuard = self::ACTIVE_GUARD;
+        $this->generatedAt = $timestamp;
         $this->createdAt = $timestamp;
+        $this->updatedAt = $timestamp;
     }
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+    public function getId(): ?int { return $this->id; }
+    public function getEmployee(): Employee { return $this->employee; }
+    public function getLeaveType(): LeaveType { return $this->leaveType; }
+    public function getAlertType(): AlertType { return $this->alertType; }
+    public function getAlertStatus(): AlertStatus { return $this->alertStatus; }
+    public function getStatus(): AlertStatus { return $this->alertStatus; }
+    public function getCurrentBalance(): string { return $this->currentBalance; }
+    public function getThresholdValue(): ?string { return $this->thresholdValue; }
+    public function getRequestedDuration(): ?string { return $this->requestedDuration; }
+    public function getConditionKey(): string { return $this->conditionKey; }
+    public function getGeneratedAt(): \DateTimeImmutable { return $this->generatedAt; }
+    public function getAlertGeneratedAt(): \DateTimeImmutable { return $this->generatedAt; }
+    public function getResolvedAt(): ?\DateTimeImmutable { return $this->resolvedAt; }
+    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
+    public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
+    public function isActive(): bool { return $this->alertStatus === AlertStatus::ACTIVE; }
 
-    public function getEmployee(): Employee
+    public function resolve(?\DateTimeImmutable $now = null): void
     {
-        return $this->employee;
-    }
+        if (!$this->isActive()) {
+            return;
+        }
 
-    public function getLeaveBalance(): LeaveBalance
-    {
-        return $this->leaveBalance;
-    }
-
-    public function getRule(): LeaveAlertRule
-    {
-        return $this->rule;
-    }
-
-    public function getLeaveTypeCode(): string
-    {
-        return $this->leaveTypeCode;
-    }
-
-    public function getCurrentBalanceAtAlert(): string
-    {
-        return $this->currentBalanceAtAlert;
-    }
-
-    public function getThresholdValueAtAlert(): string
-    {
-        return $this->thresholdValueAtAlert;
-    }
-
-    public function getTriggerCondition(): TriggerCondition
-    {
-        return $this->triggerCondition;
-    }
-
-    public function getStatus(): AlertStatus
-    {
-        return $this->status;
-    }
-
-    public function isActive(): bool
-    {
-        return $this->status === AlertStatus::ACTIVE;
-    }
-
-    public function getAlertGeneratedAt(): \DateTimeImmutable
-    {
-        return $this->alertGeneratedAt;
-    }
-
-    public function getCreatedAt(): \DateTimeImmutable
-    {
-        return $this->createdAt;
+        $timestamp = $now ?? new \DateTimeImmutable();
+        $this->alertStatus = AlertStatus::RESOLVED;
+        $this->resolvedAt = $timestamp;
+        $this->updatedAt = $timestamp;
+        $this->activeGuard = 'RESOLVED-' . ($this->id ?? bin2hex(random_bytes(8))) . '-' . $timestamp->format('Uu');
     }
 }
