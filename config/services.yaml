@@ -1,0 +1,19 @@
+parameters:
+  audit_authorized_roles:
+    - ROLE_HR_ADMIN
+    - ROLE_SYSTEM_ADMIN
+
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  App\:
+    resource: '../src/'
+    exclude:
+      - '../src/Entity/'
+      - '../src/Kernel.php'
+
+  App\Security\AuditAuthorizationService:
+    arguments:
+      $authorizedRoles: '%audit_authorized_roles%'
