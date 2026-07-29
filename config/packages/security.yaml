@@ -1,0 +1,33 @@
+security:
+  password_hashers:
+    Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+  providers:
+    app_users:
+      memory:
+        users:
+          hradmin:
+            password: '$2y$13$hdAjycMULDSGIL8SaIRXIe4N88jBS5tU6Huy75WuGQb8dO1J5vKX6'
+            roles: ['ROLE_HR_ADMIN']
+          sysadmin:
+            password: '$2y$13$hdAjycMULDSGIL8SaIRXIe4N88jBS5tU6Huy75WuGQb8dO1J5vKX6'
+            roles: ['ROLE_SYSTEM_ADMIN']
+          pimuser:
+            password: '$2y$13$hdAjycMULDSGIL8SaIRXIe4N88jBS5tU6Huy75WuGQb8dO1J5vKX6'
+            roles: ['ROLE_PIM_USER']
+
+  firewalls:
+    dev:
+      pattern: ^/(_(profiler|wdt)|css|images|js)/
+      security: false
+    api:
+      pattern: ^/api
+      stateless: true
+      provider: app_users
+      http_basic:
+        realm: OrangeHRM Employee Audit API
+
+  access_control:
+    - { path: ^/api/v1/pim/audit-events, roles: [ROLE_HR_ADMIN, ROLE_SYSTEM_ADMIN] }
+    - { path: ^/api/v1/pim/employees/.+/audit-events, roles: [ROLE_HR_ADMIN, ROLE_SYSTEM_ADMIN] }
+    - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
