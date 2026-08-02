@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OrangeHRM\Pim\EmployeeAudit\Model;
+namespace App\Pim\EmployeeAudit\Model;
 
 enum EmployeeAuditEventType: string
 {
