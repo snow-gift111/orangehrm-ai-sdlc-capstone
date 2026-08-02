@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OrangeHRM;
+namespace App;
 
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
