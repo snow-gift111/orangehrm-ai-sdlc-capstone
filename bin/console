@@ -7,7 +7,7 @@ use App\Kernel;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 
 if (!is_file(dirname(__DIR__).'/vendor/autoload_runtime.php')) {
-    throw new RuntimeException('Dependencies are missing. Run composer install before using the console.');
+    throw new LogicException('Symfony Runtime is required. Run composer install before using the console.');
 }
 
 require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
