@@ -5,5 +5,5 @@ services:
     autowire: true
     autoconfigure: true
 
-  OrangeHRM\:
+  App\:
     resource: '../src/'
