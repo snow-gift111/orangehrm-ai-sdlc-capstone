@@ -1,23 +1,26 @@
 {
-  "name": "orangehrm/employee-management-enhancement",
-  "description": "OrangeHRM Employee Management System enhancement built on a Symfony-based PHP architecture.",
+  "name": "orangehrm/ai-sdlc-capstone",
+  "description": "OrangeHRM Employee Audit History enhancement application bootstrap.",
   "type": "project",
   "license": "proprietary",
-  "minimum-stability": "stable",
-  "prefer-stable": true,
   "require": {
     "php": "^8.2",
-    "ext-ctype": "*",
-    "ext-iconv": "*",
+    "ext-json": "*",
+    "doctrine/doctrine-bundle": "^2.12",
+    "doctrine/doctrine-migrations-bundle": "^3.3",
+    "doctrine/orm": "^3.2",
     "symfony/console": "^7.1",
     "symfony/dotenv": "^7.1",
-    "symfony/flex": "^2.4",
     "symfony/framework-bundle": "^7.1",
     "symfony/runtime": "^7.1",
+    "symfony/serializer": "^7.1",
     "symfony/validator": "^7.1",
     "symfony/yaml": "^7.1"
   },
-  "require-dev": {},
+  "require-dev": {
+    "phpunit/phpunit": "^11.2",
+    "symfony/phpunit-bridge": "^7.1"
+  },
   "autoload": {
     "psr-4": {
       "App\\\\": "src/"
@@ -30,29 +33,25 @@
   },
   "config": {
     "allow-plugins": {
-      "symfony/flex": true,
+      "php-http/discovery": true,
       "symfony/runtime": true
+    },
+    "optimize-autoloader": true,
+    "preferred-install": {
+      "*": "dist"
     },
     "sort-packages": true
   },
   "scripts": {
-    "auto-scripts": {
-      "cache:clear": "symfony-cmd"
-    },
+    "auto-scripts": {},
+    "clear-cache": "symfony-cmd",
     "post-install-cmd": [
-      "@auto-scripts"
+      "@clear-cache"
     ],
     "post-update-cmd": [
-      "@auto-scripts"
+      "@clear-cache"
     ]
   },
-  "conflict": {
-    "symfony/symfony": "*"
-  },
-  "extra": {
-    "symfony": {
-      "allow-contrib": false,
-      "require": "7.1.*"
-    }
-  }
+  "minimum-stability": "stable",
+  "prefer-stable": true
 }
